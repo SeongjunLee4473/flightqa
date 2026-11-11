@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ t('app.name') }} · {{ site }} · {{ status_text }}</title>
+<link rel="icon" href="{{ favicon }}">
+<style>
+{{ css_root | safe }}
+/* 보고서 전용 스타일 토큰 (Apple 계열 UI 톤): 색은 공용 토큰, 여기서는 바탕·경계·둥글기·그림자·글꼴만 덧씌운다 */
+:root{--font-ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Segoe UI Variable Text","Segoe UI","Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;--bg:#F5F5F7;--border:rgba(0,0,0,.08);--hair:rgba(0,0,0,.06);--r-sm:12px;--r-lg:18px;--shadow1:0 1px 2px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.05);--shadow2:0 2px 6px rgba(0,0,0,.06),0 16px 40px rgba(0,0,0,.08)}
+@media (prefers-color-scheme: dark){:root:not([data-theme=light]){--bg:#0B0B0D;--bg2:#1C1C1E;--bg3:#2A2A2E;--border:rgba(255,255,255,.1);--hair:rgba(255,255,255,.08);--shadow1:0 1px 2px rgba(0,0,0,.5);--shadow2:0 12px 32px rgba(0,0,0,.6)}}
+:root[data-theme=dark]{--bg:#0B0B0D;--bg2:#1C1C1E;--bg3:#2A2A2E;--border:rgba(255,255,255,.1);--hair:rgba(255,255,255,.08);--shadow1:0 1px 2px rgba(0,0,0,.5);--shadow2:0 12px 32px rgba(0,0,0,.6)}
+@media print{:root,:root[data-theme=dark],:root:not([data-theme=light]){--bg:#fff;--border:rgba(0,0,0,.12);--hair:rgba(0,0,0,.08);--shadow1:none;--shadow2:none}}
+*,*::before,*::after{box-sizing:border-box}
+html{font-family:var(--font-ui);font-size:var(--fs-md);line-height:1.5;color:var(--text);background:var(--bg);-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
+body{margin:0;font-variant-numeric:tabular-nums}
+a{color:var(--brand)}
+h1,h2,h3{margin:0;font-weight:700;letter-spacing:-0.02em}
+h1{font-size:30px;line-height:1.2}
+h2{font-size:20px;margin:calc(var(--sp)*10) 0 calc(var(--sp)*3)}
+h3{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:700;color:var(--text);letter-spacing:-0.01em;margin:calc(var(--sp)*9) 0 calc(var(--sp)*3.5);padding-bottom:calc(var(--sp)*2);border-bottom:1px solid var(--hair)}
+h3::before{content:"";width:4px;height:16px;border-radius:2px;background:var(--brand);flex:none}
+h3 .sub{font-size:var(--fs-sm);font-weight:500;color:var(--text3)}
+h4{margin:0;font-size:15px;font-weight:700;letter-spacing:-0.01em}
+.page{max-width:1120px;margin:0 auto;padding:calc(var(--sp)*6) calc(var(--sp)*6) calc(var(--sp)*16)}
+.toolbar{position:sticky;top:0;z-index:10;display:flex;gap:calc(var(--sp)*2);align-items:center;justify-content:space-between;padding:calc(var(--sp)*2) calc(var(--sp)*5);background:color-mix(in srgb,var(--bg2) 72%,transparent);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--hair)}
+.toolbar .brand{display:flex;align-items:center;gap:calc(var(--sp)*2);font-weight:700;letter-spacing:-0.01em;color:var(--text)}
+.toolbar .brand svg{width:22px;height:22px;color:var(--brand)}
+.toolbar .actions{display:flex;gap:calc(var(--sp)*2)}
+.btn{font:inherit;font-size:var(--fs-sm);font-weight:600;padding:6px 14px;border:1px solid var(--border);border-radius:999px;background:var(--bg2);color:var(--text);cursor:pointer;transition:background var(--motion),border-color var(--motion),transform var(--motion)}
+.btn:hover{background:var(--bg3)}
+.btn:active{transform:scale(.98)}
+.btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.btn[aria-pressed=true]{background:var(--brand-soft);border-color:transparent;color:var(--brand)}
+.btn:disabled{opacity:.5;cursor:default}
+.cover{display:grid;grid-template-columns:1fr auto;gap:calc(var(--sp)*6);align-items:start;padding:calc(var(--sp)*8) 0 calc(var(--sp)*6)}
+.cover .sub{color:var(--text2);margin-top:calc(var(--sp)*1.5);font-size:var(--fs-md)}
+.meta{display:grid;grid-template-columns:repeat(4,1fr);gap:calc(var(--sp)*4) calc(var(--sp)*6);margin:calc(var(--sp)*6) 0 0;font-size:var(--fs-sm)}
+.meta>div{min-width:0}
+.meta .span2{grid-column:span 2}
+.meta dt{color:var(--text3);font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.meta dd{margin:0;overflow-wrap:anywhere;color:var(--text)}
+.meta dd.nowrap{white-space:nowrap}
+.badge{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:2px 10px;border-radius:999px;font-size:var(--fs-sm);font-weight:600;line-height:1.5;border:1px solid transparent;white-space:nowrap;vertical-align:middle}
+.badge.xl{font-size:var(--fs-lg);font-weight:700;padding:8px 20px}
+.badge::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.pass{color:var(--pass);background:var(--pass-soft)}
+.warn{color:var(--warn);background:var(--warn-soft)}
+.fail{color:var(--fail);background:var(--fail-soft)}
+.na{color:var(--na);background:var(--na-soft)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--na);margin-right:8px;vertical-align:2px}
+.dot.pass{background:var(--pass)}.dot.warn{background:var(--warn)}.dot.fail{background:var(--fail)}.dot.na{background:var(--na)}
+.surface{background:var(--bg2);border:1px solid var(--hair);border-radius:var(--r-lg);box-shadow:var(--shadow1)}
+.verdict{margin-top:calc(var(--sp)*2);padding:calc(var(--sp)*6) calc(var(--sp)*7);border:2px solid color-mix(in srgb,var(--na) 55%,transparent)}
+.verdict[data-status=pass]{border-color:color-mix(in srgb,var(--pass) 55%,transparent)}.verdict[data-status=warn]{border-color:color-mix(in srgb,var(--warn) 55%,transparent)}.verdict[data-status=fail]{border-color:color-mix(in srgb,var(--fail) 55%,transparent)}
+.verdict .head{display:flex;gap:calc(var(--sp)*3);align-items:center;flex-wrap:wrap}
+.verdict .head h2{margin:0}
+.verdict .headline{font-size:22px;font-weight:700;letter-spacing:-0.02em;margin-top:calc(var(--sp)*3)}
+.verdict .detail{color:var(--text2);margin-top:calc(var(--sp)*1)}
+.verdict h3{margin-top:calc(var(--sp)*5)}
+.actions{list-style:none;margin:0;padding:0;display:grid;gap:calc(var(--sp)*2.5)}
+.actions li{display:grid;grid-template-columns:12px 1fr;gap:8px;align-items:start}
+.actions .dot{margin:7px 0 0;width:8px;height:8px}
+.actions .a-title{font-weight:600}
+.actions .a-meta{color:var(--text3);font-size:var(--fs-sm);font-weight:500;margin-left:6px}
+.actions .a-text{color:var(--text2);margin-top:2px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:calc(var(--sp)*3);margin:calc(var(--sp)*3) 0}
+.card{background:var(--bg3);border-radius:14px;padding:calc(var(--sp)*3.5) calc(var(--sp)*4);min-width:0}
+.card .k{font-size:var(--fs-xs);font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+.card .v{font-size:22px;font-weight:700;letter-spacing:-0.02em;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .s{font-size:var(--fs-xs);color:var(--text3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flight{margin-top:calc(var(--sp)*8);padding:calc(var(--sp)*7)}
+.flight-head{display:flex;justify-content:space-between;align-items:center;gap:calc(var(--sp)*3);flex-wrap:wrap}
+.flight-head h2{margin:0}
+.flight-head .times{color:var(--text3);font-size:var(--fs-sm);margin-top:2px}
+.counts{display:flex;gap:6px;flex-wrap:wrap}
+.counts .badge{font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:var(--fs-sm)}
+th,td{text-align:center;padding:calc(var(--sp)*2.5) calc(var(--sp)*2);border-bottom:1px solid var(--hair);vertical-align:middle;word-break:keep-all;overflow-wrap:anywhere}
+th{color:var(--text3);font-weight:600;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em;background:var(--bg3)}
+th.txt,td.txt{text-align:left}
+td.num{white-space:nowrap;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.group{border:1px solid var(--hair);border-radius:var(--r-sm);background:var(--bg2);overflow:hidden;margin:0 0 calc(var(--sp)*4)}
+.group-head{display:flex;align-items:center;gap:10px;padding:calc(var(--sp)*2.5) calc(var(--sp)*3.5);background:var(--bg3);border-bottom:1px solid var(--hair);box-shadow:inset 4px 0 0 var(--na)}
+.group[data-status=pass] .group-head{box-shadow:inset 4px 0 0 var(--pass)}.group[data-status=warn] .group-head{box-shadow:inset 4px 0 0 var(--warn)}.group[data-status=fail] .group-head{box-shadow:inset 4px 0 0 var(--fail)}
+.group-head .n{color:var(--text3);font-size:var(--fs-sm)}
+.group .table-wrap{border:0;border-radius:0}
+.group table thead th{background:color-mix(in srgb,var(--bg3) 55%,var(--bg2))}
+.td-list{display:grid;gap:3px}
+.td-list>div{display:grid;grid-template-columns:12px 1fr;gap:6px;align-items:start}
+.td-list>div::before{content:"•";color:var(--text2);text-align:center;line-height:inherit}
+.td-list>div.a::before{content:"→";color:var(--brand)}
+.td-list>div.t::before{content:"▸";color:var(--text3)}
+.td-list>div.t{color:var(--text3);font-size:var(--fs-xs)}
+.td-list>div.a{color:var(--text)}
+.gate{font-size:10px;font-weight:600;color:var(--text3);border:1px solid var(--border);border-radius:6px;padding:0 5px;margin-left:5px;vertical-align:middle;letter-spacing:.04em}
+.table-wrap{overflow-x:auto;border:1px solid var(--hair);border-radius:var(--r-sm);background:var(--bg2)}
+.chart{width:100%;min-height:200px;overflow:hidden}
+.chart[hidden]{display:none}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:999px;overflow:hidden}
+.seg .btn{border:0;border-radius:0}
+.seg .btn[aria-pressed=true]{background:var(--brand);color:#fff}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:calc(var(--sp)*4)}
+.chart-grid .wide{grid-column:1/-1}
+figure{margin:0;padding:calc(var(--sp)*4) calc(var(--sp)*4) calc(var(--sp)*2);border:1px solid var(--hair);border-radius:14px;background:var(--bg2);min-width:0;display:flex;flex-direction:column;overflow:hidden}
+figcaption{display:flex;align-items:center;justify-content:space-between;gap:calc(var(--sp)*2);font-size:var(--fs-sm);color:var(--text);font-weight:600;letter-spacing:-0.01em;min-height:26px}
+figcaption .map-tools{display:flex;gap:6px;align-items:center;font-weight:500;flex-wrap:wrap;justify-content:flex-end}
+figcaption .map-tools .btn{padding:2px 10px;font-size:var(--fs-xs)}
+figcaption .map-note{font-size:var(--fs-xs);color:var(--text3);font-weight:500}
+.chart-legend{display:grid;justify-content:center;column-gap:18px;row-gap:2px;margin:8px 0 2px;font-size:11.5px;color:var(--text2);min-height:22px}
+.chart-legend .li{display:inline-flex;align-items:center;gap:7px;padding:1px 8px;border-radius:999px;cursor:pointer;user-select:none;white-space:nowrap;border:0;background:none;font:inherit;color:inherit;transition:background var(--motion),opacity var(--motion)}
+.chart-legend .li:hover{background:var(--bg3)}
+.chart-legend .li.off{opacity:.38}
+.chart-legend .li svg{width:22px;height:12px;flex:none}
+.print-img{display:none;width:100%;height:auto}
+.modebar{opacity:.85}
+.thumbs{display:flex;gap:calc(var(--sp)*3);flex-wrap:wrap}
+.thumb{width:260px;max-width:100%}
+.thumb img{width:100%;height:auto;border-radius:12px;border:1px solid var(--hair);background:#000;display:block}
+.thumb .cap{font-size:var(--fs-xs);color:var(--text3);margin-top:6px}
+.note{font-size:var(--fs-sm);color:var(--text2)}
+.print-only{display:none}
+/* GUI 웹뷰 안(embedded): 테마는 GUI 가 정하므로 테마 버튼을 숨긴다 */
+html.embedded #theme-btn{display:none}
+.warnbox{border-left:4px solid var(--warn);background:var(--warn-soft);padding:calc(var(--sp)*2) calc(var(--sp)*3);border-radius:10px;margin:calc(var(--sp)*2) 0;font-size:var(--fs-sm)}
+details{margin-top:calc(var(--sp)*3)}
+summary{cursor:pointer;color:var(--text2);font-weight:600}
+pre{font-family:var(--font-mono);font-size:var(--fs-xs);background:var(--bg3);padding:calc(var(--sp)*3);border-radius:var(--r-sm);overflow:auto;max-height:420px;white-space:pre-wrap;word-break:break-word}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:var(--fs-xs);color:var(--text3);margin:2px 0 10px}
+.legend span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;background:var(--c)}
+footer{margin-top:calc(var(--sp)*12);padding-top:calc(var(--sp)*4);border-top:1px solid var(--hair);font-size:var(--fs-xs);color:var(--text3)}
+@media (max-width:760px){table{font-size:var(--fs-xs)}th,td{padding:8px 5px}.chart-grid{grid-template-columns:1fr}.cover{grid-template-columns:1fr}.meta{grid-template-columns:repeat(2,1fr)}.flight{padding:calc(var(--sp)*4)}}
+@media print{
+  @page{size:A4;margin:12mm}
+  html{background:#fff}
+  body{background:#fff}
+  .toolbar,.modebar,.map-tools,.print-hide{display:none !important}
+  .print-only{display:block}
+  .page{max-width:none;padding:0}
+  .surface,figure,.card{box-shadow:none}
+  .verdict,figure,.card,.cards,.thumb,tr,.cover{break-inside:avoid}
+  h2,h3,figcaption,.group-head{break-after:avoid}
+  .group{break-inside:auto}
+  .actions li{break-inside:avoid}
+  .chart-grid.series{grid-template-columns:1fr}
+  .cards{grid-template-columns:repeat(5,1fr)}
+  .card .v{font-size:18px}
+  .flight{break-inside:auto;break-before:page;margin-top:0}
+  .table-wrap{overflow:visible}
+  figure.has-print .chart{display:none}
+  figure.has-print .print-img{display:block}
+  .chart-legend .li{cursor:default}
+  details{display:block}details>summary{display:none}
+  details.print-skip{display:none}
+  pre{max-height:none;background:none;padding:0;border:0}
+  .print-only pre{columns:2;column-gap:20px;font-size:9px;line-height:1.35}
+  a{color:inherit;text-decoration:none}
+}
+</style>
+</head>
+<body>
+{% macro group_table(g, t) %}
+<div class="group" data-status="{{ g.status }}">
+  <div class="group-head"><span class="badge {{ g.status }}">{{ g.status_text }}</span><h4>{{ g.label }}</h4><span class="n">{{ g.n }} {{ t('table.items') }}{% if g.n_fail or g.n_warn %} · {{ t.status('FAIL') }} {{ g.n_fail }} · {{ t.status('WARN') }} {{ g.n_warn }}{% endif %}</span></div>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th style="width:96px">{{ t('table.status') }}</th><th style="width:26%">{{ t('table.item') }}</th><th style="width:110px">{{ t('table.value') }}</th><th class="txt">{{ t('table.reason') }}</th></tr></thead>
+    <tbody>
+    {% for m in g.metrics %}
+    <tr>
+      <td><span class="badge {{ m.status }}">{{ m.status_text }}</span></td>
+      <td>{{ m.label }}{% if m.gate %}<span class="gate">GATE</span>{% endif %}</td>
+      <td class="num">{{ m.value }}</td>
+      <td class="txt"><div class="td-list">{% if m.reason_lines %}<div class="r"><span>{% for s in m.reason_lines %}{{ s }}{% if not loop.last %}<br>{% endif %}{% endfor %}</span></div>{% endif %}{% if m.action_lines %}<div class="a"><span>{% for s in m.action_lines %}{{ s }}{% if not loop.last %}<br>{% endif %}{% endfor %}</span></div>{% endif %}{% if m.threshold %}<div class="t"><span>{{ t('table.threshold') }}: {{ m.threshold }}</span></div>{% endif %}</div></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endmacro %}
+<div class="toolbar" role="banner">
+  <div class="brand" aria-label="{{ t('app.name') }}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ logo_svg | safe }}</svg>
+    <span>{{ t('app.name') }}</span>
+    <span class="badge {{ status }}">{{ status_text }}</span>
+  </div>
+  <div class="actions">
+    <button class="btn" id="theme-btn" type="button" aria-label="{{ t('report.theme') }}">{{ t('report.theme') }}</button>
+    <button class="btn" id="print-btn" type="button">{{ t('report.print') }}</button>
+  </div>
+</div>
+<main class="page">
+  <section class="cover">
+    <div>
+      <h1>{{ t('report.title') }}</h1>
+      <div class="sub">{{ t('report.subtitle') }}</div>
+      <dl class="meta">
+        <div class="span2"><dt>{{ t('report.folder') }}</dt><dd title="{{ root }}">{{ site }}</dd></div>
+        <div><dt>{{ t('report.sensor') }}</dt><dd>{{ sensor }}</dd></div>
+        <div><dt>{{ t('report.date') }}</dt><dd>{{ acq_date }}</dd></div>
+        <div><dt>{{ t('report.captures') }}</dt><dd>{{ n_captures | num }}</dd></div>
+        <div><dt>{{ t('report.flights') }}</dt><dd>{{ n_flights }}</dd></div>
+        <div class="span2"><dt>{{ t('report.generated') }}</dt><dd class="nowrap">{{ generated }}</dd></div>
+      </dl>
+    </div>
+    <div><span class="badge xl {{ status }}">{{ status_text }}</span></div>
+  </section>
+
+  <section class="verdict surface" data-status="{{ status }}" aria-labelledby="h-verdict">
+    <div class="head">
+      <h2 id="h-verdict">{{ t('section.verdict') }}</h2>
+      <span class="badge {{ status }}">{{ status_text }}</span>
+    </div>
+    <div class="headline">{{ headline }}</div>
+    {% if headline_detail %}<div class="detail">{{ headline_detail }}</div>{% endif %}
+    {% if warnings %}
+    {% for w in warnings %}<div class="warnbox">{{ t('note.warnings') }}: {{ w }}</div>{% endfor %}
+    {% endif %}
+    <h3>{{ t('section.actions') }}{% if action_items %} <span class="sub">{{ t('verdict.actions_n', n=action_items | length) }}</span>{% endif %}</h3>
+    {% if action_items %}
+    <ul class="actions">
+      {% for a in action_items %}
+      <li><span class="dot {{ a.status }}"></span><div><div class="a-title">{{ a.metric_label }}<span class="a-meta">· {{ a.meta }} · {{ a.status_text }}</span></div><div class="a-text">{% for s in a.sentences %}{{ s }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div></div></li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="note">{{ next_actions[0] if next_actions else t('verdict.none') }}</p>
+    {% endif %}
+    {% if lang != 'ko' %}<p class="note">{{ t('note.en_reason') }}</p>{% endif %}
+  </section>
+
+  {% if not flights %}
+  <p class="note">{{ t('note.no_flights') }}</p>
+  {% endif %}
+
+  {% for f in flights %}
+  <section class="flight surface" id="flight-{{ f.index }}" aria-labelledby="h-f{{ f.index }}">
+    <div class="flight-head">
+      <div>
+        <h2 id="h-f{{ f.index }}"><span class="dot {{ f.status }}" title="{{ f.status_text }}"></span>{{ t('section.flight') }} {{ f.index + 1 }} · <span style="font-family:var(--font-mono);font-weight:500">{{ f.id }}</span></h2>
+        <div class="times">{{ t('card.start') }} {{ f.start }} · {{ t('card.end') }} {{ f.end }}</div>
+      </div>
+      <div class="counts" aria-label="{{ f.status_text }}">
+        {% for k, v in f.counts.items() if v %}<span class="badge {{ {'PASS':'pass','WARN':'warn','FAIL':'fail','N/A':'na'}[k] }}">{{ t.status(k) }} {{ v }}</span>{% endfor %}
+      </div>
+    </div>
+
+    <h3>{{ t('section.summary') }}</h3>
+    <div class="cards">
+      {% for k, v, s in f.cards %}
+      <div class="card"><div class="k">{{ k }}</div><div class="v" title="{{ v }}">{{ v }}</div><div class="s" title="{{ s }}">{{ s if s else '&nbsp;' | safe }}</div></div>
+      {% endfor %}
+    </div>
+
+    <h3>{{ t('section.map') }}</h3>
+    <div class="legend">
+      <span style="--c:#3B82F6">{{ t('flag.none') }}</span>
+      <span style="--c:var(--warn)">{{ t('flag.agl_out') }} / {{ t('flag.off_nadir') }} / {{ t('flag.rtk_not_fixed') }} / {{ t('flag.irradiance_drop') }}</span>
+      <span style="--c:var(--fail)">{{ t('flag.missing_band') }} / {{ t('flag.saturated') }}</span>
+      <span style="--c:var(--na)">{{ t('flag.ground') }}</span>
+    </div>
+    <div class="chart-grid">
+      <figure data-cols="1" class="map-figure" style="grid-column:1 / -1"><figcaption><span>{{ t('chart.map_unified') }}</span><span class="map-tools"><span class="map-note" data-status></span><span class="map-note print-hide" data-hint>{{ t('chart.map_hint') }}</span><span class="seg"><button class="btn" type="button" data-crs="utm" aria-pressed="true">{{ t('chart.crs_utm') }}</button><button class="btn" type="button" data-crs="wgs84" aria-pressed="false">{{ t('chart.crs_ll') }}</button></span><button class="btn" type="button" data-basemap="chart-{{ f.index }}-map" aria-pressed="false">{{ t('chart.basemap') }}</button><button class="btn" type="button" data-fit>{{ t('chart.fit_all') }}</button></span></figcaption><div class="chart-legend"></div><div class="chart" id="chart-{{ f.index }}-map"></div><div class="chart" id="chart-{{ f.index }}-mapll" hidden></div><img class="print-img" alt=""></figure>
+    </div>
+
+    <h3>{{ t('section.details') }}</h3>
+    {% for g in f.groups %}
+    {{ group_table(g, t) }}
+    {% endfor %}
+
+    <h3>{{ t('section.charts') }}</h3>
+    <div class="chart-grid series">
+      <figure data-cols="1"><figcaption><span>{{ t('chart.altitude') }}</span><span class="map-note print-hide" data-hint>{{ t('chart.zoom_hint') }}</span></figcaption><div class="chart-legend"></div><div class="chart" id="chart-{{ f.index }}-alt"></div><img class="print-img" alt=""></figure>
+      <figure data-cols="1"><figcaption><span>{{ t('chart.irradiance') }}</span><span class="map-note print-hide" data-hint>{{ t('chart.zoom_hint') }}</span></figcaption><div class="chart-legend"></div><div class="chart" id="chart-{{ f.index }}-irr"></div><img class="print-img" alt=""></figure>
+      <figure data-cols="1"><figcaption><span>{{ t('chart.saturation') }}</span><span class="map-note print-hide" data-hint>{{ t('chart.zoom_hint') }}</span></figcaption><div class="chart-legend"></div><div class="chart" id="chart-{{ f.index }}-sat"></div><img class="print-img" alt=""></figure>
+      <figure data-cols="1"><figcaption><span>{{ t('chart.attitude') }}</span><span class="map-note print-hide" data-hint>{{ t('chart.zoom_hint') }}</span></figcaption><div class="chart-legend"></div><div class="chart" id="chart-{{ f.index }}-att"></div><img class="print-img" alt=""></figure>
+      <figure data-cols="1"><figcaption><span>{{ t('chart.interval') }}</span></figcaption><div class="chart-legend"></div><div class="chart" id="chart-{{ f.index }}-int"></div><img class="print-img" alt=""></figure>
+      {% if 'hist' in f.charts %}
+      <figure data-cols="1"><figcaption><span>{{ t('section.histograms') }}</span></figcaption><div class="chart-legend"></div><div class="chart" id="chart-{{ f.index }}-hist"></div><img class="print-img" alt=""></figure>
+      {% endif %}
+    </div>
+
+    {% if f.lines %}
+    <h3>{{ t('section.lines') }} ({{ f.lines | length }}{% if f.n_transit %} + {{ t('table.transit') }} {{ f.n_transit }}{% endif %})</h3>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>{{ t('table.line') }}</th><th>{{ t('table.n') }}</th><th>{{ t('table.heading') }}</th><th>{{ t('table.length') }}</th><th>{{ t('table.mean_agl') }}</th><th>{{ t('table.std_agl') }}</th><th>{{ t('table.mean_speed') }}</th></tr></thead>
+      <tbody>
+      {% for ln in f.lines %}
+      <tr><td class="num">{{ ln.index }} <span class="th" style="display:inline">#{{ ln.start_capture }}–{{ ln.end_capture }}</span></td><td class="num">{{ ln.n_captures }}</td><td class="num">{{ ln.heading_deg | num(0, '°') }}</td><td class="num">{{ ln.length_m | num(0, 'm') }}</td><td class="num">{{ ln.mean_agl_m | num(1, 'm') }}</td><td class="num">{{ ln.std_agl_m | num(2, 'm') }}</td><td class="num">{{ ln.mean_speed_mps | num(2, 'm/s') }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% endif %}
+
+    {% if f.thumbs %}
+    <h3>{{ t('section.thumbs') }}</h3>
+    <div class="thumbs">
+      {% for th in f.thumbs %}
+      <div class="thumb"><img src="{{ th.src }}" alt="{{ th.label }}"><div class="cap"><b>{{ th.label }}</b> · {{ th.caption }}</div></div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </section>
+  {% endfor %}
+
+  <section aria-labelledby="h-excluded">
+    <h2 id="h-excluded">{{ t('section.excluded') }}</h2>
+    {% for g in run_groups %}
+    {{ group_table(g, t) }}
+    {% endfor %}
+    {% if excluded %}
+    <details {% if excluded | length <= 30 %}open{% else %}class="print-skip"{% endif %}>
+      <summary>{{ t('table.file') }} ({{ excluded | length }})</summary>
+      <div class="table-wrap"><table><thead><tr><th class="txt">{{ t('table.path') }}</th><th class="txt">{{ t('table.reason_short') }}</th></tr></thead><tbody>
+      {% for e in excluded %}<tr><td class="txt" style="font-family:var(--font-mono);font-size:var(--fs-xs);word-break:break-all">{{ e.path }}</td><td class="txt">{{ e.reason }}</td></tr>{% endfor %}
+      </tbody></table></div>
+    </details>
+    {% else %}
+    <p class="note">{{ t('note.excluded_none') }}</p>
+    {% endif %}
+  </section>
+
+  <section aria-labelledby="h-appendix">
+    <h2 id="h-appendix">{{ t('section.appendix') }}</h2>
+    <h3>{{ t('section.versions') }}</h3>
+    <dl class="meta">
+      {% for k, v in versions.items() %}<div><dt>{{ k }}</dt><dd>{{ v }}</dd></div>{% endfor %}
+      {% for k, v in timings.items() %}<div><dt>t · {{ k }}</dt><dd>{{ v | num(2, 's') if k != 'cache_hits' else v | num(0) }}</dd></div>{% endfor %}
+    </dl>
+    <details class="print-skip"><summary>{{ t('section.config') }}</summary><pre>{{ config_json }}</pre></details>
+    <details class="print-skip"><summary>{{ t('section.tags') }}</summary><pre>{{ sample_tags | json }}</pre></details>
+    <div class="print-only"><h3>{{ t('section.config') }}</h3><pre>{{ config_json }}</pre><p class="note">{{ t('note.print_tags') }}</p></div>
+  </section>
+  <footer>{{ t('app.name') }} {{ versions.flightqa }} · {{ t('note.offline') }}</footer>
+</main>
+
+{% for f in flights %}{% for key, js in f.charts.items() %}
+<script type="application/json" id="data-{{ f.index }}-{{ key }}">{{ js | safe }}</script>
+{% endfor %}{% endfor %}
+<script type="application/json" id="report-options">{{ options_json | safe }}</script>
+<script>{{ plotly_js | safe }}</script>
+<script>{% include "_basemap.js.j2" %}</script>
+<script>
+(function(){
+  'use strict';
+  var root=document.documentElement;
+  var KEY='flightqa-theme';
+  var OPT={}; try{ OPT=JSON.parse(document.getElementById('report-options').textContent)||{}; }catch(e){}
+  var FONT=OPT.font||'sans-serif';
+  var LIGHT_TEXT=OPT.lightText||'#4A5563';
+  var PRINT_W=703;            // A4 210 mm − 2×12 mm 여백 = 186 mm @ 96 dpi
+  var GRID_GAP=16, FIG_PAD=16, FIG_BORDER=1;
+
+  // ---- 테마
+  function applyTheme(v){ if(v){root.setAttribute('data-theme',v);} else {root.removeAttribute('data-theme');} }
+  var EMBED=/(^|[#&])embedded(&|$)/.test(location.hash);
+  var hashTheme=(/theme=(dark|light)/.exec(location.hash)||[])[1]||'';
+  if(EMBED){ root.classList.add('embedded'); applyTheme(hashTheme); }
+  else { try{ applyTheme(localStorage.getItem(KEY)||''); }catch(e){} }
+  window.__flightqa_setTheme=function(v){ applyTheme(v==='dark'?'dark':'light'); restyle(); };
+  function isDark(){ var a=root.getAttribute('data-theme'); if(a) return a==='dark'; return window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches; }
+  function textColor(){ return getComputedStyle(root).getPropertyValue('--text2').trim()||'#444'; }
+  var btn=document.getElementById('theme-btn');
+  if(btn){ btn.addEventListener('click',function(){ var next=isDark()?'light':'dark'; applyTheme(next); try{localStorage.setItem(KEY,next);}catch(e){} restyle(); }); }
+  var pbtn=document.getElementById('print-btn');
+  if(pbtn){ pbtn.addEventListener('click',function(){ whenPrintReady().then(function(){ window.print(); }); }); }
+
+  // ---- HTML 범례: 그래프 위 중앙, 항목 폭을 재서 대칭 격자(n 열 또는 2·3 열)로. 클릭으로 트레이스 토글.
+  var SVG='http://www.w3.org/2000/svg';
+  function firstColor(v){ return Array.isArray(v)?null:v; }
+  function swatch(tr){
+    var svg=document.createElementNS(SVG,'svg'); svg.setAttribute('viewBox','0 0 22 12'); svg.setAttribute('aria-hidden','true');
+    var color=(tr.line&&firstColor(tr.line.color))||(tr.marker&&firstColor(tr.marker.color))||'#8C95A1';
+    var mode=tr.mode||'';
+    var el;
+    if(tr.type==='bar'||tr.type==='histogram'){ el=document.createElementNS(SVG,'rect'); el.setAttribute('x','4'); el.setAttribute('y','1'); el.setAttribute('width','14'); el.setAttribute('height','10'); el.setAttribute('rx','2'); el.setAttribute('fill',color); }
+    else if(tr.fill==='toself'){ el=document.createElementNS(SVG,'rect'); el.setAttribute('x','2'); el.setAttribute('y','1.5'); el.setAttribute('width','18'); el.setAttribute('height','9'); el.setAttribute('rx','2'); el.setAttribute('fill',tr.fillcolor||'rgba(128,128,128,.2)'); el.setAttribute('stroke',color); el.setAttribute('stroke-width','1'); }
+    else if(mode.indexOf('markers')>=0&&mode.indexOf('lines')<0){ el=markerShape(tr.marker&&tr.marker.symbol,color); }
+    else { el=document.createElementNS(SVG,'line'); el.setAttribute('x1','1'); el.setAttribute('x2','21'); el.setAttribute('y1','6'); el.setAttribute('y2','6'); el.setAttribute('stroke',color); el.setAttribute('stroke-width',String(Math.max(2,(tr.line&&tr.line.width)||2))); el.setAttribute('stroke-linecap','round'); var d=tr.line&&tr.line.dash; if(d==='dash') el.setAttribute('stroke-dasharray','5 4'); else if(d==='dot') el.setAttribute('stroke-dasharray','1.5 3.5'); }
+    svg.appendChild(el); return svg;
+  }
+  // 마커 트레이스의 스와치는 그래프의 마커 기호와 같은 모양으로 그린다 (Plotly symbol 이름 기준)
+  function markerShape(symbol,color){
+    var s=String(symbol||'circle').replace(/-open$/,''), el;
+    if(s==='x'){ el=document.createElementNS(SVG,'path'); el.setAttribute('d','M7.5 2.5L14.5 9.5M14.5 2.5L7.5 9.5'); el.setAttribute('stroke',color); el.setAttribute('stroke-width','2'); el.setAttribute('stroke-linecap','round'); el.setAttribute('fill','none'); }
+    else if(s==='cross'){ el=document.createElementNS(SVG,'path'); el.setAttribute('d','M11 1.5V10.5M6.5 6H15.5'); el.setAttribute('stroke',color); el.setAttribute('stroke-width','2'); el.setAttribute('stroke-linecap','round'); el.setAttribute('fill','none'); }
+    else if(s==='square'){ el=document.createElementNS(SVG,'rect'); el.setAttribute('x','7'); el.setAttribute('y','2'); el.setAttribute('width','8'); el.setAttribute('height','8'); el.setAttribute('rx','1'); el.setAttribute('fill',color); }
+    else if(s==='diamond'){ el=document.createElementNS(SVG,'polygon'); el.setAttribute('points','11,1 16,6 11,11 6,6'); el.setAttribute('fill',color); }
+    else if(s.indexOf('triangle')===0){ el=document.createElementNS(SVG,'polygon'); el.setAttribute('points',s==='triangle-down'?'6,2 16,2 11,10.5':'11,1.5 16,10 6,10'); el.setAttribute('fill',color); }
+    else { el=document.createElementNS(SVG,'circle'); el.setAttribute('cx','11'); el.setAttribute('cy','6'); el.setAttribute('r','3.5'); el.setAttribute('fill',color); }
+    return el;
+  }
+  function traceEmpty(tr){ var x=tr.x||tr.lon||[]; return Array.isArray(x)&&x.length===0; }
+  function namedIdx(gd,name){ var out=[]; for(var k=0;k<gd.data.length;k++){ if(gd.data[k].name===name) out.push(k); } return out; }
+  function buildLegend(c){
+    // 통합 지도(UTM·위경도가 한 figure): 범례는 UTM 차트가 대표로 만든다
+    if(c.isMap&&c.fig.layout.meta.crs==='wgs84'&&partner(c)) return;
+    var host=c.figure.querySelector('.chart-legend'); if(!host) return;
+    host.innerHTML='';
+    if(c.noLegend){ host.hidden=true; return; }
+    var items=[];
+    for(var i=0;i<c.el.data.length;i++){ var tr=c.el.data[i]; if(tr.showlegend===false||!tr.name||traceEmpty(tr)) continue; items.push({i:i,tr:tr}); }
+    if(!items.length){ host.hidden=true; return; }
+    items.sort(function(a,b){ return ((a.tr.legendrank||1000)-(b.tr.legendrank||1000))||(a.i-b.i); });
+    host.hidden=false;
+    items.forEach(function(it){
+      var b=document.createElement('button'); b.type='button'; b.className='li'; b.setAttribute('aria-pressed','true');
+      b.appendChild(swatch(it.tr)); var s=document.createElement('span'); s.textContent=it.tr.name; b.appendChild(s);
+      b.addEventListener('click',function(){
+        var on=b.getAttribute('aria-pressed')==='true'; b.setAttribute('aria-pressed',on?'false':'true'); b.classList.toggle('off',on);
+        // 같은 이름의 트레이스(여러 링 포함)를, 지도면 짝 지도까지 함께 켜고 끈다
+        var targets=[c]; var o=c.isMap?partner(c):null; if(o) targets.push(o);
+        Promise.all(targets.map(function(t){ return Plotly.restyle(t.el,{visible:on?'legendonly':true},c.isMap?namedIdx(t.el,it.tr.name):[it.i]); })).then(function(){ schedulePrintImages([visibleOf(c)]); });
+      });
+      host.appendChild(b);
+    });
+    layoutLegend(c);
+  }
+  function layoutLegend(c){
+    var host=c.figure.querySelector('.chart-legend'); if(!host||host.hidden) return;
+    var items=host.children; var n=items.length; if(!n) return;
+    host.style.gridTemplateColumns='repeat('+n+', max-content)';
+    var maxw=0; for(var i=0;i<n;i++){ maxw=Math.max(maxw,items[i].getBoundingClientRect().width); }
+    var gap=18, avail=host.clientWidth;
+    var cols=Math.max(1,Math.min(n,Math.floor((avail+gap)/(maxw+gap))));
+    if(n===4&&cols===3) cols=2;
+    if(n===5&&cols===4) cols=3;
+    if(n===6&&(cols===4||cols===5)) cols=3;
+    if(n>6&&cols<n) cols=Math.min(cols,4);
+    host.style.gridTemplateColumns='repeat('+cols+', max-content)';
+  }
+
+  // ---- 차트 렌더
+  var charts=[];   // {el, fig, key, isMap, figure, noLegend}
+  function isMapFig(fig){ return !!(fig.layout.meta&&fig.layout.meta.kind==='map'); }
+  var MAP_CFG={responsive:true,displaylogo:false,scrollZoom:true,displayModeBar:true,doubleClick:'reset',
+    modeBarButtonsToRemove:['select2d','lasso2d','autoScale2d','toggleSpikelines','hoverClosestCartesian','hoverCompareCartesian','toImage','zoom2d']};
+  // 시계열도 지도처럼: 휠 확대, 드래그 이동, 더블클릭·⌂ 버튼으로 초기화. 상자 확대(zoom2d)는 빼서
+  // 실수로 드래그해도 확대되지 않는다.
+  var STD_CFG={responsive:true,displaylogo:false,scrollZoom:true,displayModeBar:true,doubleClick:'reset',
+    modeBarButtonsToRemove:['select2d','lasso2d','autoScale2d','toggleSpikelines','hoverClosestCartesian','hoverCompareCartesian','toImage','zoom2d']};
+  function render(){
+    var nodes=document.querySelectorAll('script[type="application/json"][id^="data-"]');
+    var pending=[];
+    for(var i=0;i<nodes.length;i++){
+      var id=nodes[i].id.replace('data-','chart-');
+      var el=document.getElementById(id);
+      if(!el) continue;
+      var fig;
+      try{ fig=JSON.parse(nodes[i].textContent); }catch(e){ continue; }
+      fig.layout=fig.layout||{}; fig.layout.font=fig.layout.font||{}; fig.layout.font.color=textColor();
+      fig.layout.autosize=true;
+      el.style.height=(fig.layout.height||300)+'px';   // 컨테이너 높이를 고정해 그림이 상자 밖으로 나가지 않게
+      // 단일 트레이스 차트(간격 히스토그램)는 범례가 없다: 데이터의 showlegend 를 보고 판단한 뒤 Plotly 범례는 항상 끈다
+      var noLegend=fig.layout.showlegend===false;
+      fig.layout.showlegend=false;
+      var isMap=isMapFig(fig);
+      if(!isMap){ fig.layout.dragmode='pan'; fig.layout.modebar=Object.assign({orientation:'v'},fig.layout.modebar||{}); }
+      var c={el:el,fig:fig,key:id,isMap:isMap,figure:el.closest('figure'),noLegend:noLegend};
+      charts.push(c);
+      pending.push(Plotly.newPlot(el,fig.data,fig.layout,isMap?MAP_CFG:STD_CFG).then((function(c){ return function(){ buildLegend(c); }; })(c)));
+    }
+    Promise.all(pending).then(function(){
+      for(var i=0;i<charts.length;i++){ if(charts[i].isMap) bindMap(charts[i]); }
+      window.__flightqa_ready=true;
+      if(OPT.basemap&&OPT.basemap.auto){ var bs=document.querySelectorAll('button[data-basemap]'); for(var j=0;j<bs.length;j++){ toggleBasemap(bs[j]); } }
+      schedulePrintImages();
+    });
+  }
+  function restyle(){ var c=textColor(); for(var i=0;i<charts.length;i++){ Plotly.relayout(charts[i].el,{'font.color':c}); } }
+  if(window.matchMedia){ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',restyle); }
+  var resizeT=null;
+  function refit(){ clearTimeout(resizeT); resizeT=setTimeout(function(){ for(var i=0;i<charts.length;i++){ Plotly.Plots.resize(charts[i].el); layoutLegend(charts[i]); } },120); }
+  window.addEventListener('resize',refit);
+  // 창 크기 변화 없이 컨테이너만 바뀌는 경우(숨겨진 웹뷰가 보이게 될 때 등)도 다시 맞춘다
+  if(window.ResizeObserver){ var pageEl=document.querySelector('.page'); if(pageEl){ new ResizeObserver(refit).observe(pageEl); } }
+
+  // ---- 지도 두 장의 확대 범위 동기화 (UTM ↔ 위경도, 아핀 근사)
+  var syncing=false;
+  function affine(c){ return c.fig.layout.meta&&c.fig.layout.meta.affine; }
+  function toLL(a,x,y){ return [a[0]*x+a[1]*y+a[2], a[3]*x+a[4]*y+a[5]]; }
+  function toXY(a,lon,lat){ var det=a[0]*a[4]-a[1]*a[3]; if(!det) return null; var u=lon-a[2], v=lat-a[5]; return [(a[4]*u-a[1]*v)/det, (-a[3]*u+a[0]*v)/det]; }
+  function partner(c){ var crs=c.fig.layout.meta.crs; var want=crs==='utm'?'wgs84':'utm'; var pre=c.key.replace(/-map(ll)?$/,''); for(var i=0;i<charts.length;i++){ var o=charts[i]; if(o!==c&&o.isMap&&o.key.indexOf(pre+'-map')===0&&o.fig.layout.meta.crs===want) return o; } return null; }
+  function bindMap(c){
+    c.el.on('plotly_relayout',function(ev){
+      schedulePrintImages([c]);
+      if(syncing) return;
+      var o=partner(c); var a=affine(c); if(!o||!a) return;
+      var upd=null;
+      if(ev['xaxis.autorange']||ev['yaxis.autorange']){ upd={'xaxis.autorange':true,'yaxis.autorange':true}; }
+      else if(ev['xaxis.range[0]']!==undefined||ev['xaxis.range']||ev['yaxis.range[0]']!==undefined||ev['yaxis.range']){
+        var xr=c.el.layout.xaxis.range, yr=c.el.layout.yaxis.range; if(!xr||!yr) return;
+        var p0,p1;
+        if(c.fig.layout.meta.crs==='utm'){ p0=toLL(a,xr[0],yr[0]); p1=toLL(a,xr[1],yr[1]); }
+        else { p0=toXY(a,xr[0],yr[0]); p1=toXY(a,xr[1],yr[1]); if(!p0||!p1) return; }
+        upd={'xaxis.range':[Math.min(p0[0],p1[0]),Math.max(p0[0],p1[0])],'yaxis.range':[Math.min(p0[1],p1[1]),Math.max(p0[1],p1[1])]};
+      }
+      if(!upd) return;
+      syncing=true;
+      Plotly.relayout(o.el,upd).then(function(){ syncing=false; schedulePrintImages([o]); },function(){ syncing=false; });
+    });
+  }
+
+  // ---- 위성 배경지도 (옵션, 온라인). 타일 합치기는 공용 FQBasemap (_basemap.js.j2) — 임무 경로 지도와 공유.
+  function setStatus(c,msg){ var s=c.figure.querySelector('[data-status]'); if(s) s.textContent=msg||''; }
+  function loadBasemap(c){
+    setStatus(c,OPT.text.basemapLoading);
+    var a=affine(c);
+    var job=(c.fig.layout.meta.crs==='utm'&&a)?FQBasemap.loadWarped(c.el,OPT.basemap,function(x,y){ return toLL(a,x,y); }):FQBasemap.load(c.el,OPT.basemap);
+    return job.then(function(res){
+      if(!res) return;
+      return Plotly.relayout(c.el,{images:res.images,annotations:res.annotations,'xaxis.gridcolor':'rgba(255,255,255,0.25)','yaxis.gridcolor':'rgba(255,255,255,0.25)'}).then(function(){ setStatus(c,''); c.basemap=true; schedulePrintImages([c]); });
+    },function(){ setStatus(c,OPT.text.basemapFail); });
+  }
+  function clearBasemap(c){ return Plotly.relayout(c.el,{images:[],annotations:[],'xaxis.gridcolor':'rgba(128,128,128,0.18)','yaxis.gridcolor':'rgba(128,128,128,0.18)'}).then(function(){ c.basemap=false; setStatus(c,''); schedulePrintImages([c]); }); }
+  function chartById(id){ for(var i=0;i<charts.length;i++){ if(charts[i].key===id) return charts[i]; } return null; }
+  function visibleOf(c){ if(!c||!c.isMap||!c.el.hidden) return c; var o=partner(c); return (o&&!o.el.hidden)?o:c; }
+  // 통합 지도의 좌표계 전환: 한쪽만 보이게 하고, 위성 배경이 켜져 있으면 새 보기에 다시 깐다
+  function showCrs(fig,crs){
+    var prev=null,next=null;
+    for(var i=0;i<charts.length;i++){ var c=charts[i]; if(!c.isMap||c.figure!==fig) continue; if(!c.el.hidden) prev=c; if(c.fig.layout.meta.crs===crs) next=c; }
+    if(!next||next===prev) return;
+    for(var j=0;j<charts.length;j++){ var d=charts[j]; if(d.isMap&&d.figure===fig) d.el.hidden=(d!==next); }
+    var bs=fig.querySelectorAll('button[data-crs]'); for(var k=0;k<bs.length;k++){ bs[k].setAttribute('aria-pressed',bs[k].getAttribute('data-crs')===crs?'true':'false'); }
+    Plotly.Plots.resize(next.el);
+    var bb=fig.querySelector('button[data-basemap]');
+    if(bb&&bb.getAttribute('aria-pressed')==='true'){ if(prev) clearBasemap(prev); loadBasemap(next); }
+    schedulePrintImages([next]);
+  }
+  function toggleBasemap(b){
+    var c=visibleOf(chartById(b.getAttribute('data-basemap'))); if(!c||!OPT.basemap||!OPT.basemap.url) return;
+    var on=b.getAttribute('aria-pressed')==='true';
+    b.disabled=true;
+    (on?clearBasemap(c):loadBasemap(c)).then(function(){ b.setAttribute('aria-pressed',c.basemap?'true':'false'); b.disabled=false; },function(){ b.disabled=false; });
+  }
+  var mfs=document.querySelectorAll('figure.map-figure');
+  for(var m=0;m<mfs.length;m++){ (function(fig){
+    var cb=fig.querySelectorAll('button[data-crs]');
+    for(var i=0;i<cb.length;i++){ (function(b){ b.addEventListener('click',function(){ showCrs(fig,b.getAttribute('data-crs')); }); })(cb[i]); }
+    var fb=fig.querySelector('button[data-fit]');
+    if(fb){ fb.addEventListener('click',function(){ for(var i=0;i<charts.length;i++){ var c=charts[i]; if(c.isMap&&c.figure===fig&&!c.el.hidden){ Plotly.relayout(c.el,{'xaxis.autorange':true,'yaxis.autorange':true}); } } }); }
+  })(mfs[m]); }
+  var bbs=document.querySelectorAll('button[data-basemap]');
+  for(var k=0;k<bbs.length;k++){ (function(b){ if(!OPT.basemap||!OPT.basemap.url){ b.hidden=true; return; } b.addEventListener('click',function(){ toggleBasemap(b); }); })(bbs[k]); }
+
+  // ---- 인쇄용 정적 이미지: 인쇄 폭(A4) 에 맞춰 차트를 다시 배치해 PNG 로 굽는다 (테마와 무관하게 라이트). 범례는 HTML 이 그대로 인쇄된다.
+  function printWidth(c){ var cols=+(c.figure.getAttribute('data-cols')||1); return Math.floor((PRINT_W-GRID_GAP*(cols-1))/cols)-2*FIG_PAD-2*FIG_BORDER; }
+  function printLayout(c){
+    var w=printWidth(c);
+    var L=JSON.parse(JSON.stringify(c.el.layout));
+    L.width=w; L.height=L.height||300; L.autosize=false; L.showlegend=false;
+    L.font=Object.assign({},L.font,{color:LIGHT_TEXT,family:FONT});
+    L.paper_bgcolor='rgba(0,0,0,0)'; L.plot_bgcolor='rgba(0,0,0,0)';
+    L.dragmode=false;
+    return L;
+  }
+  var printQueue=[], printT=null, printBusy=false;
+  window.__flightqa_print_ready=false;
+  function schedulePrintImages(list){
+    var arr=list||charts;
+    for(var i=0;i<arr.length;i++){ if(printQueue.indexOf(arr[i])<0) printQueue.push(arr[i]); }
+    window.__flightqa_print_ready=false;
+    clearTimeout(printT); printT=setTimeout(runPrintQueue,list?600:50);
+  }
+  function runPrintQueue(){
+    if(printBusy) return;
+    var c=printQueue.shift();
+    if(!c){ window.__flightqa_print_ready=true; if(readyResolve){ readyResolve(); readyResolve=null; } return; }
+    if(c.isMap&&c.el.hidden){ runPrintQueue(); return; }   // 통합 지도: 숨은 좌표계는 인쇄 이미지를 만들지 않는다
+    printBusy=true;
+    var L=printLayout(c);
+    Plotly.toImage({data:c.el.data,layout:L,config:{staticPlot:true}},{format:'png',width:L.width,height:L.height,scale:3}).then(function(url){
+      var img=c.figure.querySelector('img.print-img'); if(img){ img.src=url; img.style.aspectRatio=L.width+' / '+L.height; c.figure.classList.add('has-print'); }
+      printBusy=false; runPrintQueue();
+    },function(){ printBusy=false; runPrintQueue(); });
+  }
+  var readyResolve=null;
+  function whenPrintReady(){ if(window.__flightqa_print_ready) return Promise.resolve(); return new Promise(function(res){ readyResolve=res; }); }
+  window.__flightqa_whenPrintReady=whenPrintReady;
+
+  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',render); } else { render(); }
+})();
+</script>
+</body>
+</html>

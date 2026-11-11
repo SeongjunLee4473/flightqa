@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="{{ theme }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>임무 경로 지도</title>
+<style>
+{{ css_root | safe }}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI Variable Text","Segoe UI","Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:12px;color:var(--text);background:var(--bg2);font-variant-numeric:tabular-nums;overflow:hidden}
+.wrap{display:flex;flex-direction:column;height:100%}
+.bar{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);flex:none}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:999px;overflow:hidden}
+.seg button{border:0;border-radius:0}
+.btn{font:inherit;font-size:12px;font-weight:600;padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:var(--bg2);color:var(--text2);cursor:pointer;transition:background .15s,color .15s}
+.btn:hover{background:var(--bg3)}
+.btn[aria-pressed="true"]{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn:disabled{opacity:.45;cursor:default}
+.status{color:var(--text3);font-size:11px;margin-left:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.coord{color:var(--text2);font-size:11px;min-width:220px;text-align:right;font-variant-numeric:tabular-nums}
+.maps{flex:1;position:relative;min-height:0}
+.map{position:absolute;inset:0}
+.map[hidden]{display:none}
+.modebar{opacity:.85}
+.empty{display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <span class="seg">
+      <button class="btn" type="button" data-crs="utm" aria-pressed="true">UTM (m)</button>
+      <button class="btn" type="button" data-crs="wgs84" aria-pressed="false">위경도</button>
+    </span>
+    <button class="btn" type="button" id="basemap" aria-pressed="false" title="온라인 위성 타일 (인터넷 필요) · UTM 보기에서는 축 좌표계로 재투영">위성 배경</button>
+    <button class="btn" type="button" id="fit-all" title="불러온 임무가 모두 보이게">전체 보기</button>
+    <span class="status" id="status"></span>
+    <span class="coord" id="coord">휠 확대 · 드래그 이동 · 더블클릭 초기화</span>
+  </div>
+  <div class="maps">
+    {% if n_plans == 0 %}<div class="empty">임무 파일을 불러오면 여기에 그려집니다</div>{% else %}
+    <div class="map" id="map-utm"></div>
+    <div class="map" id="map-wgs84" hidden></div>
+    {% endif %}
+  </div>
+</div>
+<script type="application/json" id="figs">{{ figs_json | safe }}</script>
+<script type="application/json" id="options">{{ options_json | safe }}</script>
+<script>{{ plotly_js | safe }}</script>
+<script>{% include "_basemap.js.j2" %}</script>
+<script>
+(function(){
+  'use strict';
+  var root=document.documentElement;
+  var FIGS=JSON.parse(document.getElementById('figs').textContent);
+  var OPT=JSON.parse(document.getElementById('options').textContent);
+  var CFG={responsive:true,displaylogo:false,scrollZoom:true,displayModeBar:true,doubleClick:'reset',
+    modeBarButtonsToRemove:['select2d','lasso2d','autoScale2d','toggleSpikelines','hoverClosestCartesian','hoverCompareCartesian','toImage','zoom2d']};
+  var els={utm:document.getElementById('map-utm'),wgs84:document.getElementById('map-wgs84')};
+  var cur='utm', syncing=false, basemapOn=false, basemapT=null, selected={{ selected }};
+  var status=document.getElementById('status'), coord=document.getElementById('coord'), bmBtn=document.getElementById('basemap');
+  function textColor(){ return getComputedStyle(root).getPropertyValue('--text2').trim()||'#444'; }
+  function affine(){ return FIGS.utm.layout.meta.affine; }
+  function toLL(a,x,y){ return [a[0]*x+a[1]*y+a[2], a[3]*x+a[4]*y+a[5]]; }
+  function toXY(a,lon,lat){ var det=a[0]*a[4]-a[1]*a[3]; if(!det) return null; var u=lon-a[2], v=lat-a[5]; return [(a[4]*u-a[1]*v)/det, (-a[3]*u+a[0]*v)/det]; }
+  function other(crs){ return crs==='utm'?'wgs84':'utm'; }
+  function setStatus(m){ status.textContent=m||''; }
+
+  window.__flightqa_setTheme=function(v){ root.setAttribute('data-theme',v==='dark'?'dark':'light'); var c=textColor(); ['utm','wgs84'].forEach(function(k){ if(els[k]) Plotly.relayout(els[k],{'font.color':c}); }); };
+
+  function fmtCoord(crs,x,y){ return crs==='utm'?('E '+x.toLocaleString(undefined,{maximumFractionDigits:1})+' · N '+y.toLocaleString(undefined,{maximumFractionDigits:1})+' m'):(y.toFixed(6)+', '+x.toFixed(6)); }
+  function bind(crs){
+    var gd=els[crs]; if(!gd) return;
+    gd.on('plotly_hover',function(ev){ var p=ev.points&&ev.points[0]; if(p) coord.textContent=fmtCoord(crs,p.x,p.y); });
+    gd.on('plotly_unhover',function(){ coord.textContent=''; });
+    gd.on('plotly_relayout',function(ev){
+      if(crs===cur&&basemapOn){ clearTimeout(basemapT); basemapT=setTimeout(loadBasemap,450); }
+      if(syncing) return;
+      var a=affine(); var o=els[other(crs)]; if(!a||!o) return;
+      var upd=null;
+      if(ev['xaxis.autorange']||ev['yaxis.autorange']){ upd={'xaxis.autorange':true,'yaxis.autorange':true}; }
+      else if(ev['xaxis.range[0]']!==undefined||ev['xaxis.range']||ev['yaxis.range[0]']!==undefined||ev['yaxis.range']){
+        var xr=gd.layout.xaxis.range, yr=gd.layout.yaxis.range; if(!xr||!yr) return;
+        var p0,p1;
+        if(crs==='utm'){ p0=toLL(a,xr[0],yr[0]); p1=toLL(a,xr[1],yr[1]); } else { p0=toXY(a,xr[0],yr[0]); p1=toXY(a,xr[1],yr[1]); if(!p0||!p1) return; }
+        upd={'xaxis.range':[Math.min(p0[0],p1[0]),Math.max(p0[0],p1[0])],'yaxis.range':[Math.min(p0[1],p1[1]),Math.max(p0[1],p1[1])]};
+      }
+      if(!upd) return; syncing=true;
+      Plotly.relayout(o,upd).then(function(){ syncing=false; },function(){ syncing=false; });
+    });
+  }
+  function show(crs){
+    if(!els[crs]) return;
+    cur=crs;
+    els.utm.hidden=crs!=='utm'; els.wgs84.hidden=crs!=='wgs84';
+    var bs=document.querySelectorAll('button[data-crs]'); for(var i=0;i<bs.length;i++){ bs[i].setAttribute('aria-pressed',bs[i].getAttribute('data-crs')===crs?'true':'false'); }
+    bmBtn.disabled=!OPT.basemap.url;
+    Plotly.Plots.resize(els[crs]);
+    if(basemapOn){ clearTimeout(basemapT); basemapT=setTimeout(loadBasemap,150); }
+  }
+  function fit(i){
+    var gd=els[cur]; if(!gd) return;
+    var b=(i>=0)&&FIGS[cur].layout.meta.bounds[i];
+    if(!b){ Plotly.relayout(gd,{'xaxis.autorange':true,'yaxis.autorange':true}); return; }
+    var px=(b[2]-b[0])*0.12||1, py=(b[3]-b[1])*0.12||1;
+    Plotly.relayout(gd,{'xaxis.range':[b[0]-px,b[2]+px],'yaxis.range':[b[1]-py,b[3]+py]});
+  }
+  window.__fq_select=function(i){ selected=i; fit(i); };
+  var loadSeq=0;
+  function loadBasemap(){
+    var crs=cur, gd=els[crs]; if(!gd) return Promise.resolve();
+    var seq=++loadSeq; setStatus('배경지도 불러오는 중…');
+    var a=affine();
+    var job=(crs==='utm')?(a?FQBasemap.loadWarped(gd,OPT.basemap,function(x,y){ return toLL(a,x,y); }):Promise.resolve(null)):FQBasemap.load(gd,OPT.basemap);
+    return job.then(function(res){
+      if(!res||seq!==loadSeq) return;
+      return Plotly.relayout(gd,{images:res.images,annotations:res.annotations,'xaxis.gridcolor':'rgba(255,255,255,0.25)','yaxis.gridcolor':'rgba(255,255,255,0.25)'}).then(function(){ setStatus(''); basemapOn=true; bmBtn.setAttribute('aria-pressed','true'); });
+    },function(){ setStatus('배경지도를 불러올 수 없음 (인터넷 연결 필요)'); });
+  }
+  function clearOne(gd){ return gd?Plotly.relayout(gd,{images:[],annotations:[],'xaxis.gridcolor':'rgba(128,128,128,0.18)','yaxis.gridcolor':'rgba(128,128,128,0.18)'}):Promise.resolve(); }
+  function clearBasemap(){ loadSeq++; return Promise.all([clearOne(els.utm),clearOne(els.wgs84)]).then(function(){ basemapOn=false; bmBtn.setAttribute('aria-pressed','false'); setStatus(''); }); }
+  bmBtn.addEventListener('click',function(){ if(bmBtn.disabled) return; bmBtn.disabled=true; (basemapOn?clearBasemap():loadBasemap()).then(function(){ bmBtn.disabled=false; },function(){ bmBtn.disabled=false; }); });
+  document.getElementById('fit-all').addEventListener('click',function(){ fit(-1); });
+  var cb=document.querySelectorAll('button[data-crs]'); for(var k=0;k<cb.length;k++){ (function(b){ b.addEventListener('click',function(){ show(b.getAttribute('data-crs')); }); })(cb[k]); }
+
+  if(els.utm){
+    var c=textColor();
+    ['utm','wgs84'].forEach(function(k){ FIGS[k].layout.font=Object.assign({},FIGS[k].layout.font,{color:c}); FIGS[k].layout.autosize=true; delete FIGS[k].layout.height; });
+    Promise.all([Plotly.newPlot(els.utm,FIGS.utm.data,FIGS.utm.layout,CFG),Plotly.newPlot(els.wgs84,FIGS.wgs84.data,FIGS.wgs84.layout,CFG)]).then(function(){
+      bind('utm'); bind('wgs84'); show('utm');
+      if(selected>=0) fit(selected);
+      window.__fq_ready=true;
+    });
+  } else { bmBtn.disabled=true; document.getElementById('fit-all').disabled=true; }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# 생성물은 전부 _out/ 아래 (빌드 dist·build, 도구 캐시). 옛 위치도 혹시 몰라 유지
+_out/
+build/
+dist/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# 빌드 시 생성
+src/flightqa/_build.py
+
+# 외부 바이너리 (scripts/fetch_exiftool.py 로 재다운로드)
+tools/exiftool/
+
+# 분석 출력물 / 실제 현장 데이터는 절대 커밋하지 않는다 (CLAUDE.md §12)
+outputs/
+*.tif
+*.tiff
+*.jpg
+*.jpeg
+!docs/screenshots/*.png
+!assets/**
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

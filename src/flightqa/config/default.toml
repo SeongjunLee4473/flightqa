@@ -1,0 +1,171 @@
+# FlightQA 기본 임계값. 각 값의 근거는 docs/QA_RULES.md 에 있다.
+# 사용자 설정(TOML)은 이 파일 위에 덮어쓴다 (flightqa run --config my.toml).
+# 단위는 키 이름 접미사로 표기: _m (미터), _s (초), _min (분), _pct (퍼센트), _deg (도), _mps (m/s).
+
+[report]
+online_basemap = false           # 위성 배경지도(온라인 타일) 자동 불러오기. 오프라인 원칙상 기본 꺼짐, 보고서의 버튼으로 수동 켜기 가능
+basemap_provider = "esri"        # esri (키 불필요, 출처 표기 내장) | vworld (국토지리정보원, API 키 필요) | custom
+basemap_url = ""                 # custom: XYZ 템플릿 예 "https://tiles.example/{z}/{x}/{y}.png?key={key}"
+basemap_api_key = ""
+basemap_attribution = ""
+basemap_max_zoom = 19
+
+[discovery]
+flight_gap_min = 10.0            # 캡처 공백이 이 이상이면 별개 비행으로 분리 (CLAUDE.md §2.3)
+min_captures_per_flight = 5      # 이보다 적은 캡처 묶음은 비행이 아니라 '단발 촬영' 으로 보고
+follow_symlinks = false
+
+[integrity]
+missing_band_warn_pct = 0.5      # 밴드 누락 캡처 비율 (%)
+missing_band_fail_pct = 5.0
+interval_outlier_factor = 2.0    # 중앙 간격의 N 배 이상 = 누락 의심 구간
+gap_warn_count = 1
+gap_fail_count = 10
+clock_reversal_warn_count = 1
+time_mismatch_tolerance_s = 120.0  # 파일 mtime 과 EXIF 시각 차이 허용 (센서별 UTC/로컬 관례 보정 후)
+time_mismatch_warn_pct = 5.0
+corrupt_file_warn_count = 1
+corrupt_file_fail_pct = 2.0       # 손상 파일 비율 (%) — 전체 이미지 파일 대비
+duplicate_warn_count = 1
+
+[flight]
+target_agl_m = "auto"            # 목표 비행고도(m). "auto" = 임무 KMZ 촬영 고도 → 없으면 조사 라인 중앙값(일관성만 판정)
+agl_tolerance_warn_pct = 20.0    # 목표고도 대비 허용 오차 (CLAUDE.md §2.1: 20–30%)
+agl_tolerance_fail_pct = 30.0
+agl_within_tolerance_min_pct = 90.0   # 허용범위 이내 캡처 비율이 이보다 낮으면 WARN
+agl_within_tolerance_fail_pct = 70.0
+altitude_std_warn_m = 5.0        # 라인별 고도 표준편차
+altitude_std_fail_m = 10.0
+target_speed_mps = "auto"        # 목표 비행속도(m/s). "auto" = 임무 KMZ 비행속도 → 없으면 중앙값(정보만)
+speed_tolerance_warn_pct = 25.0
+speed_tolerance_fail_pct = 50.0
+nadir_warn_deg = 5.0             # 연직에서 벗어난 각도
+nadir_fail_deg = 10.0
+off_nadir_max_pct = 10.0         # 연직 이탈 캡처 비율 허용 (%)
+oblique_min_deg = 30.0           # 이 각도 이상 기울어진 캡처가 oblique_min_run 개 이상 이어지면 의도된 경사 촬영(DJI 고도 최적화)
+oblique_min_run = 3              # → 연직 이탈·조사 라인·중복도 판정에서 제외하고 건수만 표시
+min_captures_per_line = 4
+line_heading_break_deg = 45.0    # 진행방향이 이만큼 꺾이면 새 라인
+takeoff_alt_msl_m = "auto"       # RedEdge AGL 추정용 이륙점 고도. "auto" = 첫 캡처 고도
+dem_path = ""                    # GeoTIFF DEM/DSM 경로. 주어지면 실제 AGL = 기체 고도 − geoid_offset_m − 지표고도
+geoid_offset_m = 0.0             # 기체 고도(타원체고) − DEM 정표고 차 (N). 한반도 중부 약 +25 m. DEM 이 타원체고면 0
+terrain_follow_detect = true     # 지형추종(DSM 추종) 비행 감지 → DEM 없으면 AGL 판정 N/A (이륙점 기준 고도는 참고값)
+terrain_follow_min_range_m = 5.0 # 라인 안 고도 변화폭(p95−p5) 중앙값 하한
+terrain_follow_corr_min = 0.8    # 인접 왕복 라인 고도 프로파일 상관계수 중앙값 하한
+
+[rtk]                            # M3M 전용. RedEdge(Quick Mount) 는 N/A
+fixed_flags = [50]               # DJI RtkFlag: 50 = Fix (docs/ASSUMPTIONS.md 참고, 가정)
+fixed_min_pct_warn = 95.0
+fixed_min_pct_fail = 80.0
+std_hgt_warn_m = 0.10
+
+[judgement]
+warn_to_fail_count = 6           # WARN 이 이 개수 이상이면 전체를 FAIL 로 격상
+
+[cache]
+enabled = true
+path = ""                        # 비우면 OS 캐시 폴더 (LOCALAPPDATA/flightqa 또는 ~/.cache/flightqa)
+
+[extract]
+workers = 0                      # 0 = CPU 코어 수
+chunk_size = 50
+
+[sensors.rededge_mx]
+sensor_width_mm = 4.8
+sensor_height_mm = 3.6
+focal_length_mm = 5.4
+image_width_px = 1280
+image_height_px = 960
+saturation_dn = 65520            # 12-bit << 4 (docs/ASSUMPTIONS.md 실측)
+
+[sensors.dji_m3m]
+sensor_width_mm = 5.184          # 2592 px × 2.0 µm (XMP CalibratedFocalLength 2170 px / 4.34 mm)
+sensor_height_mm = 3.888
+focal_length_mm = 4.34
+image_width_px = 2592
+image_height_px = 1944
+saturation_dn = 65520
+
+[overlap]                        # §4.4 실측 중복도 (카메라 물리값 × AGL 로 지상 커버리지 계산)
+forward_warn_pct = 75.0          # 종중복 (CLAUDE.md §2.1: 75% 이상)
+forward_fail_pct = 60.0
+side_warn_pct = 60.0             # 횡중복
+side_fail_pct = 40.0
+pairs_ok_min_pct = 90.0          # 종중복 기준을 만족하는 연속 캡처 쌍 비율
+hole_min_area_m2 = 50.0          # 커버리지 합집합 내부 공백으로 보고할 최소 면적
+
+[survey_area]                    # 궤적 기반 조사 구역 추정 (조정기 임무 폴리곤은 영상 메타데이터에 없음) + GIS 내보내기
+enabled = true                   # false 면 추정·GeoPackage·GeoTIFF 를 만들지 않는다
+mission_path = ""                # 조정기(Pilot 2)에서 내보낸 임무 KMZ/KML 경로. 있으면 그 폴리곤이 조사 구역
+auto_mission_files = true        # 데이터 폴더 안의 *.kmz / *.kml 을 임무 파일로 자동 인식 (여러 개면 비행마다 폴리곤이 겹치는 파일)
+mission_match_min_pct = 50.0     # 임무 파일을 비행에 붙이는 기준: 조사 라인 캡처 중 폴리곤 안 비율 (%)
+hull_ratio = 0.3                 # 오목 껍질 비율: 0 = 가장 오목 (캡처점을 바짝 따라감), 1 = 볼록 껍질
+margin_frac = 0.0                # 여유 폭 = 캡처 지상 커버리지의 짧은 변 × 이 비율. Pilot 2 매핑 임무 실측: 바깥 라인이 폴리곤 경계에 놓여 0 이 최적 (IoU 0.88)
+margin_m = 0.0                   # 0 = margin_frac 로 자동, 양수 = 이 값(m) 을 그대로 사용
+min_points = 4                   # 추정에 필요한 최소 조사 라인 캡처 수
+fill_warn_pct = 95.0             # 추정 구역 안의 커버리지 충족률 (%)
+fill_fail_pct = 85.0
+uncovered_min_area_m2 = 50.0     # 미촬영 조각으로 보고할 최소 면적
+raster_cell_m = 2.0              # overlap_count.tif · survey_area.tif 셀 크기 (m)
+raster_max_pixels = 16000000     # 래스터 픽셀 상한. 넘으면 셀 크기를 자동으로 키운다
+
+[metashape]                      # Metashape 처리 보고서(PDF) 판정 — 후처리 품질 화면 (docs/QA_RULES.md)
+aligned_warn_pct = 100.0         # 영상 정렬 성공률 (%) — 한 장이라도 빠지면 WARN
+aligned_fail_pct = 95.0
+reproj_rms_warn_px = 1.0         # 재투영 오차 RMS (px)
+reproj_rms_fail_px = 1.5
+reproj_max_warn_px = 30.0        # 재투영 오차 최대 (px) — 극단 타이포인트 잔존 의심
+multiplicity_warn = 3.0          # 타이포인트 평균 관측 영상 수 (관측 영상 수)
+calib_corr_warn = 0.95           # 보정 계수 간 상관 절댓값 — 과적합 의심
+location_profile = "auto"        # 카메라 위치 오차 기준: auto(카메라 이름으로 추정) | rtk | gps
+rtk_xy_warn_m = 0.10             # RTK 기체 (M3M 등): 평균 카메라 위치 오차 XY (m)
+rtk_xy_fail_m = 0.30
+rtk_z_warn_m = 0.15
+rtk_z_fail_m = 0.50
+gps_xy_warn_m = 3.0              # 카메라 자체 GPS (Quick Mount RedEdge 등): 수 m 가 정상
+gps_xy_fail_m = 10.0
+gps_z_warn_m = 5.0
+gps_z_fail_m = 15.0
+gcp_xy_gsd_mult = 2.0            # GCP RMSE 허용: XY ≤ GSD × 2
+gcp_z_gsd_mult = 3.0             # Z ≤ GSD × 3
+cross_images_warn_pct = 1.0      # 비행 분석과 대조: 영상 수 차이 (%)
+cross_images_fail_pct = 10.0
+cross_dev_warn_pct = 20.0        # 비행고도·GSD 편차 (%)
+cross_area_warn_pct = 50.0       # 면적 편차 (%) — Metashape 자취 합집합 vs FlightQA 커버리지 합집합
+warn_to_fail_count = 4           # WARN 이 이 수 이상이면 전체 FAIL
+
+[exposure]                       # §4.5 노출·포화 (픽셀 읽기)
+stride = 1                       # 픽셀 샘플링 간격. 1 = 전체, 4 = 초고속 모드 (1/16 픽셀)
+workers = 0                      # 0 = CPU 코어 수
+saturated_pixel_warn_pct = 0.5   # 캡처 한 밴드에서 포화 픽셀 비율이 이 이상이면 '포화 캡처'
+saturated_pixel_fail_pct = 5.0
+saturated_captures_warn_pct = 3.0    # 포화 캡처 비율 (%)
+saturated_captures_fail_pct = 15.0
+underexposed_range_pct = 5.0     # p99−p1 이 다이내믹 레인지의 이 비율 미만이면 저노출
+underexposed_captures_warn_pct = 5.0
+exposure_jump_factor = 2.0       # 연속 캡처 간 노출시간 변화가 이 배수 이상이면 급변
+exposure_jumps_warn_count = 3
+histogram_bins = 64
+
+[irradiance]                     # §4.6 조도·태양 조건
+cv_warn_pct = 10.0               # 조사 라인 구간 조도 변동계수 (%)
+cv_fail_pct = 25.0
+drop_factor = 0.75               # 이동 중앙값 대비 이 비율 아래로 떨어지면 급변 구간 (구름)
+drop_window = 15                 # 이동 중앙값 창 (캡처 수)
+events_warn_count = 1
+events_fail_count = 5
+stable_fraction_warn_pct = 80.0  # 이동 중앙값 ±10% 이내인 캡처 비율
+stable_band_pct = 10.0
+solar_elevation_min_deg = 30.0   # CLAUDE.md §4.6: 기본 30°
+low_sun_warn_pct = 10.0          # 태양고도 미달 캡처 비율
+low_sun_fail_pct = 50.0
+xmp_solar_mismatch_warn_deg = 5.0   # XMP 기록 태양고도 vs pvlib 계산 차이
+symmetry_warn_pct = 20.0         # 비행 전/후 조도 비대칭 (%)
+
+[panel]                          # §4.7 캘리브레이션 패널
+required_for = ["rededge_mx"]    # 패널 없음 = FAIL 게이트인 센서. M3M 은 Terra 가 조도 센서로 보정하므로 선택
+ground_agl_max_m = 5.0           # 지상 캡처로 볼 AGL 상한
+window_min = 20.0                # 비행 시작 전 / 종료 후 이 시간 안의 지상 캡처만 패널 후보
+detect_bright_region = true      # 밝고 균일한 사각 영역 검출 (힌트 수준)
+bright_fraction_min = 0.01       # 패널 후보 영역 비율 하한
+bright_fraction_max = 0.5

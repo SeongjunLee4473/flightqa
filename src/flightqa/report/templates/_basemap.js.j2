@@ -1,0 +1,77 @@
+/* 위성 배경지도 (온라인 슬리피 타일) — 보고서와 임무 경로 지도가 함께 쓴다.
+   FQBasemap.load(gd, opt)            : 위경도 축 지도. 현재 범위를 덮는 타일을 행 단위 캔버스로 합쳐
+                                        layout.images 항목과 출처 annotation 을 돌려준다.
+   FQBasemap.loadWarped(gd, opt, toLL) : 투영(UTM m) 축 지도. toLL(x, y) → [lon, lat] 로 화소마다 역변환해
+                                        웹 메르카토르 모자이크를 축 좌표계로 재투영한 이미지 한 장을 돌려준다.
+   opt = {url, key, maxZoom, attribution}. */
+window.FQBasemap=(function(){
+  function tileToLon(x,z){ return x/Math.pow(2,z)*360-180; }
+  function tileToLat(y,z){ var n=Math.PI-2*Math.PI*y/Math.pow(2,z); return 180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))); }
+  function lonToTile(lon,z){ return (lon+180)/360*Math.pow(2,z); }
+  function latToTile(lat,z){ var r=lat*Math.PI/180; return (1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*Math.pow(2,z); }
+  function tileUrl(opt,z,x,y){ return opt.url.replace('{z}',z).replace('{x}',x).replace('{y}',y).replace('{key}',opt.key||''); }
+  function loadImg(url){ return new Promise(function(res,rej){ var im=new Image(); im.crossOrigin='anonymous'; im.onload=function(){res(im);}; im.onerror=function(){rej(new Error('tile'));}; im.src=url; }); }
+  function attribution(opt){ return [{text:opt.attribution||'',xref:'paper',yref:'paper',x:1,y:0,xanchor:'right',yanchor:'bottom',showarrow:false,font:{size:9,color:'#fff'},bgcolor:'rgba(0,0,0,0.45)',borderpad:2}]; }
+  /* 위경도 bbox [lonW, latS, lonE, latN] 을 덮는 타일 모자이크 (최대 36 타일). 결과: {canvas, x0, y0, z} */
+  function mosaic(bbox,pw,opt){
+    var lonSpan=Math.abs(bbox[2]-bbox[0]);
+    var z=Math.floor(Math.log2(360/lonSpan*pw/256)); z=Math.max(1,Math.min(opt.maxZoom||19,z));
+    var x0,x1,y0,y1;
+    function span(){ x0=Math.floor(lonToTile(bbox[0],z)); x1=Math.floor(lonToTile(bbox[2],z)); y0=Math.floor(latToTile(bbox[3],z)); y1=Math.floor(latToTile(bbox[1],z)); }
+    span(); while((x1-x0+1)*(y1-y0+1)>36&&z>1){ z--; span(); }
+    var ps=[];
+    for(var y=y0;y<=y1;y++){ for(var x=x0;x<=x1;x++){ ps.push(loadImg(tileUrl(opt,z,x,y))); } }
+    var cols=x1-x0+1, rows=y1-y0+1;
+    return Promise.all(ps).then(function(imgs){
+      var cv=document.createElement('canvas'); cv.width=256*cols; cv.height=256*rows; var ctx=cv.getContext('2d');
+      for(var i=0;i<imgs.length;i++){ ctx.drawImage(imgs[i],(i%cols)*256,Math.floor(i/cols)*256,256,256); }
+      return {canvas:cv,x0:x0,y0:y0,z:z,cols:cols,rows:rows};
+    });
+  }
+  function load(gd,opt){
+    var L=gd._fullLayout; var xr=L.xaxis.range, yr=L.yaxis.range; if(!xr||!yr||!opt||!opt.url) return Promise.resolve(null);
+    var bbox=[Math.min(xr[0],xr[1]),Math.min(yr[0],yr[1]),Math.max(xr[0],xr[1]),Math.max(yr[0],yr[1])];
+    return mosaic(bbox,L._size.w,opt).then(function(m){
+      var images=[];
+      for(var r=0;r<m.rows;r++){
+        var row=document.createElement('canvas'); row.width=m.canvas.width; row.height=256;
+        row.getContext('2d').drawImage(m.canvas,0,r*256,row.width,256,0,0,row.width,256);
+        var lonW=tileToLon(m.x0,m.z), lonE=tileToLon(m.x0+m.cols,m.z), latN=tileToLat(m.y0+r,m.z), latS=tileToLat(m.y0+r+1,m.z);
+        images.push({source:row.toDataURL('image/jpeg',0.85),xref:'x',yref:'y',x:lonW,y:latN,sizex:lonE-lonW,sizey:latN-latS,xanchor:'left',yanchor:'top',sizing:'stretch',layer:'below',opacity:1});
+      }
+      return {images:images,annotations:attribution(opt),zoom:m.z};
+    });
+  }
+  function loadWarped(gd,opt,toLL){
+    var L=gd._fullLayout; var xr=L.xaxis.range, yr=L.yaxis.range; if(!xr||!yr||!opt||!opt.url||!toLL) return Promise.resolve(null);
+    var X0=Math.min(xr[0],xr[1]), X1=Math.max(xr[0],xr[1]), Y0=Math.min(yr[0],yr[1]), Y1=Math.max(yr[0],yr[1]);
+    var c=[toLL(X0,Y0),toLL(X1,Y0),toLL(X0,Y1),toLL(X1,Y1)];
+    var lons=c.map(function(p){return p[0];}), lats=c.map(function(p){return p[1];});
+    var bbox=[Math.min.apply(null,lons),Math.min.apply(null,lats),Math.max.apply(null,lons),Math.max.apply(null,lats)];
+    var pw=L._size.w, ph=L._size.h;
+    return mosaic(bbox,pw,opt).then(function(m){
+      var W=Math.min(1400,Math.max(200,Math.round(pw))), H=Math.max(100,Math.round(W*(Y1-Y0)/(X1-X0)));
+      if(H>1400){ H=1400; W=Math.round(H*(X1-X0)/(Y1-Y0)); }
+      var src=m.canvas.getContext('2d').getImageData(0,0,m.canvas.width,m.canvas.height);
+      var out=document.createElement('canvas'); out.width=W; out.height=H; var octx=out.getContext('2d');
+      var dst=octx.createImageData(W,H), sd=src.data, dd=dst.data, sw=m.canvas.width, sh=m.canvas.height;
+      var scale=Math.pow(2,m.z);
+      for(var j=0;j<H;j++){
+        var y=Y1-(j+0.5)/H*(Y1-Y0);
+        for(var i=0;i<W;i++){
+          var x=X0+(i+0.5)/W*(X1-X0);
+          var ll=toLL(x,y);
+          var u=Math.floor(((ll[0]+180)/360*scale-m.x0)*256);
+          var r=ll[1]*Math.PI/180; var v=Math.floor(((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*scale-m.y0)*256);
+          var o=(j*W+i)*4;
+          if(u<0||v<0||u>=sw||v>=sh){ dd[o+3]=0; continue; }
+          var s=(v*sw+u)*4; dd[o]=sd[s]; dd[o+1]=sd[s+1]; dd[o+2]=sd[s+2]; dd[o+3]=255;
+        }
+      }
+      octx.putImageData(dst,0,0);
+      var img={source:out.toDataURL('image/jpeg',0.85),xref:'x',yref:'y',x:X0,y:Y1,sizex:X1-X0,sizey:Y1-Y0,xanchor:'left',yanchor:'top',sizing:'stretch',layer:'below',opacity:1};
+      return {images:[img],annotations:attribution(opt),zoom:m.z};
+    });
+  }
+  return {load:load,loadWarped:loadWarped,tileUrl:tileUrl};
+})();
