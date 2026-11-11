@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import io
+import os
 import shutil
 import sys
 import urllib.request
@@ -27,7 +28,9 @@ TARGET = REPO / "tools" / "exiftool"
 
 
 def main() -> int:
-    if sys.platform != "win32":
+    # os.name 으로 분기한다. sys.platform 비교는 mypy 가 정적으로 좁혀서
+    # Linux·macOS 에서 검사하면 아래 Windows 경로를 도달 불가로 보고한다.
+    if os.name != "nt":
         print("Windows-only: on macOS/Linux install exiftool via brew/apt.")
         return 0
     if (TARGET / "exiftool.exe").exists():
