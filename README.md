@@ -135,6 +135,7 @@ QGIS 에서 보기: `flightqa.gpkg` 를 QGIS 창에 끌어다 놓으면 레이�
 - [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md) — 샘플로 확정한 사실과 아직 가정인 것
 - [docs/QA_RULES.md](docs/QA_RULES.md) — 판정 규칙과 임계값 근거
 - [docs/DESIGN.md](docs/DESIGN.md) — 디자인 시스템 (토큰·대비·레이아웃)
+- [CHANGELOG.md](CHANGELOG.md) — 마일스톤별 변경 이력
 - `docs/tags_rededge_mx*.json`, `docs/tags_dji_m3m*.json` — 샘플 캡처의 원본 태그 (좌표·시리얼 마스킹)
 - `scripts/dump_tags.py` — 새 샘플로 태그 문서 재생성
 - `tests/fixtures/synth.py` — 합성 데이터 생성기 (이상 주입 가능)
