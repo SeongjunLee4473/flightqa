@@ -1,0 +1,26 @@
+# .gitattributes 의 줄바꿈 규칙과 맞춘다 (LF 기본, PowerShell·배치 파일만 CRLF).
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.py]
+indent_style = space
+indent_size = 4
+max_line_length = 100
+
+[*.{toml,yml,yaml,json,j2,html,js}]
+indent_style = space
+indent_size = 2
+
+[*.{ps1,bat,cmd}]
+end_of_line = crlf
+
+[Makefile]
+indent_style = tab
+
+[*.md]
+trim_trailing_whitespace = false
