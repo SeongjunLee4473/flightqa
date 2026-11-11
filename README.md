@@ -139,7 +139,9 @@ QGIS 에서 보기: `flightqa.gpkg` 를 QGIS 창에 끌어다 놓으면 레이�
 - `scripts/dump_tags.py` — 새 샘플로 태그 문서 재생성
 - `tests/fixtures/synth.py` — 합성 데이터 생성기 (이상 주입 가능)
 
-## 라이선스 메모
+## 라이선스
+
+FlightQA 소스는 MIT 라이선스다 ([LICENSE](LICENSE)). 함께 배포하는 구성 요소:
 
 - ExifTool: Perl Artistic License / GPL 이중 — 바이너리 재배포 허용.
 - PySide6: LGPL v3 — 동적 링크로 exe 에 포함.
