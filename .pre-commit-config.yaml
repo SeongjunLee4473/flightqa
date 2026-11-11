@@ -1,0 +1,16 @@
+# 커밋 전에 ruff 형식·린트를 돌린다:  uvx pre-commit install
+# rev 는 uv.lock 의 ruff 버전과 맞춘다.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.6
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-toml
+      - id: check-yaml
+      - id: check-added-large-files
+        args: [--maxkb=1024]
