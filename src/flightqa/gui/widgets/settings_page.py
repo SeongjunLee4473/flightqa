@@ -93,7 +93,7 @@ class SettingsPage(QWidget):
         v = QVBoxLayout(w)
         row = QHBoxLayout()
         self.preset_name = QLineEdit()
-        self.preset_name.setPlaceholderText("프리셋 이름 (예: 광릉_잣나무_100m)")
+        self.preset_name.setPlaceholderText("프리셋 이름 (예: 현장A_잣나무_100m)")
         row.addWidget(label("프리셋", "muted"))
         row.addWidget(self.preset_name, 1)
         row.addWidget(button("저장", variant="primary", on_click=self.save_preset))
