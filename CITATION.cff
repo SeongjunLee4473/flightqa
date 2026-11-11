@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use FlightQA in your work, please cite it as below."
+title: "FlightQA: quality assurance for UAV multispectral flight data"
+type: software
+authors:
+  - family-names: Lee
+    given-names: Seongjun
+    orcid: "https://orcid.org/0009-0003-4035-4719"
+repository-code: "https://github.com/SeongjunLee4473/flightqa"
+license: MIT
+version: 0.1.0.dev0
+keywords:
+  - UAV
+  - multispectral
+  - MicaSense RedEdge-MX
+  - DJI Mavic 3 Multispectral
+  - quality assurance
+  - calibration and validation
