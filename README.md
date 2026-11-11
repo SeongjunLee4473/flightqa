@@ -10,6 +10,19 @@ UAV 다중분광 비행 데이터 품질 진단 도구.
 
 > 현재 상태: **M5 (배포)** 완료 — Windows onedir 빌드(`FlightQA.exe`, `flightqa-cli.exe`, exiftool 번들, zip 약 340 MB). 데스크톱 앱(홈·분석·결과·설정, 드래그앤드롭, 취소, 프리셋, 최근 목록, 이전 분석 비교, 라이트/다크), HTML 단일 파일 보고서(오프라인·인쇄 CSS), PDF(QtWebEngine), 한국어/영어. 폴더 탐색 → exiftool 병렬 추출(캐시) → 캡처 무결성·궤적·고도·속도·RTK → 실측 중복도·커버리지 → 포화·노출(픽셀 병렬) → 조도·태양(pvlib) → 캘리브레이션 패널 → 종합 판정 → JSON/CSV/GeoJSON 내보내기.
 
+<details>
+<summary><b>English overview</b></summary>
+
+FlightQA checks raw UAV multispectral flight folders before you spend hours in Metashape or DJI Terra. Point it at one folder and it reads every capture's EXIF/XMP with a single batched exiftool process, then reports whether the data is fit for photogrammetric processing and why.
+
+- **Sensors**: MicaSense RedEdge-MX (DJI M350 RTK, Quick Mount) and DJI Mavic 3 Multispectral.
+- **Checks**: capture integrity, trajectory and altitude (optional DEM-based AGL), measured forward/side overlap and coverage, exposure and pixel-level saturation, irradiance stability and sun elevation (pvlib), calibration panel captures, and an overall verdict with recommended actions.
+- **Outputs**: a self-contained offline HTML report, PDF, and JSON/CSV/GeoJSON exports for QGIS.
+- **Interfaces**: a PySide6 desktop app and an equivalent CLI (`flightqa run <folder>`). The app also reads mission KMZ files and Metashape processing reports.
+- **Development**: `uv sync`, then `uv run python scripts/check.py` (ruff, mypy --strict, pytest). The UI is in Korean; reports are available in Korean and English.
+
+</details>
+
 ## 설치 (사용자)
 
 **Windows (Python 불필요)** — 빌드한 PC 에서는 앱 폴더 `D:\seongjun\04_code\flightqa\` 의 `FlightQA.exe`, 또는 바탕화면·시작 메뉴의 **FlightQA** 바로가기를 더블클릭한다. 같은 폴더의 `dev\` 는 개발 저장소이며 실행에는 쓰이지 않는다. 다른 PC 에는 `FlightQA-<버전>-win64.zip` 을 풀고 `FlightQA.exe` 를 더블클릭한다. exiftool 이 함께 들어 있어 별도 설치가 없다.
