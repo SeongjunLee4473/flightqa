@@ -25,7 +25,7 @@ FlightQA checks raw UAV multispectral flight folders before you spend hours in M
 
 ## 설치 (사용자)
 
-**Windows (Python 불필요)** — 빌드한 PC 에서는 앱 폴더 `D:\seongjun\04_code\flightqa\` 의 `FlightQA.exe`, 또는 바탕화면·시작 메뉴의 **FlightQA** 바로가기를 더블클릭한다. 같은 폴더의 `dev\` 는 개발 저장소이며 실행에는 쓰이지 않는다. 다른 PC 에는 `FlightQA-<버전>-win64.zip` 을 풀고 `FlightQA.exe` 를 더블클릭한다. exiftool 이 함께 들어 있어 별도 설치가 없다.
+**Windows (Python 불필요)** — 빌드한 PC 에서는 앱 폴더(저장소 `dev\` 의 상위 폴더) 의 `FlightQA.exe`, 또는 바탕화면·시작 메뉴의 **FlightQA** 바로가기를 더블클릭한다. 같은 폴더의 `dev\` 는 개발 저장소이며 실행에는 쓰이지 않는다. 다른 PC 에는 `FlightQA-<버전>-win64.zip` 을 풀고 `FlightQA.exe` 를 더블클릭한다. exiftool 이 함께 들어 있어 별도 설치가 없다.
 설치 프로그램(`FlightQA-<버전>-setup.exe`)이 있으면 그것으로 설치해도 된다 (관리자 권한 불필요, 사용자 폴더에 설치).
 
 배포 폴더에는 `FlightQA.exe`, `시작하기.txt`, `docs\`, `tools\` 만 보인다. 프로그램 구성 요소(`_internal\`, `flightqa-cli.exe`)는 숨김 속성이라 탐색기 기본 설정에서는 보이지 않으며, 옮기거나 지우면 안 된다. 폴더 전체를 통째로 복사해야 다른 PC 에서 실행된다.
