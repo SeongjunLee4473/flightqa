@@ -1,0 +1,42 @@
+name: 버그 보고
+description: 분석 결과가 이상하거나 앱이 멈추고 오류가 날 때
+labels: [bug]
+body:
+  - type: dropdown
+    id: sensor
+    attributes:
+      label: 센서
+      options:
+        - MicaSense RedEdge-MX
+        - DJI Mavic 3 Multispectral (M3M)
+        - 해당 없음 (임무 경로 / 후처리 품질 화면)
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: 실행 방식
+      options:
+        - FlightQA.exe (GUI)
+        - flightqa-cli
+        - 소스 (uv run)
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 버전 / 운영체제
+      placeholder: "예: 0.1.0.dev0, Windows 11"
+  - type: textarea
+    id: what
+    attributes:
+      label: 무슨 일이 있었나요
+      description: 기대한 결과와 실제 결과를 적어 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 로그 / summary.json 일부
+      description: 현장 좌표·기체 시리얼 번호는 지우고 붙여 주세요.
+      render: text
